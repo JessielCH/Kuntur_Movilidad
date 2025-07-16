@@ -1,0 +1,13 @@
+fastapi==0.110.0
+uvicorn==0.29.0
+opencv-python-headless==4.9.0.80
+ultralytics==8.2.0
+torch==2.2.1
+requests==2.31.0
+python-multipart==0.0.9
+gdown==5.1.0
+langchain-groq==0.1.2
+watchdog==4.0.0
+faster-whisper==0.10.0
+ffmpeg-python==0.2.0
+torchaudio==2.2.1

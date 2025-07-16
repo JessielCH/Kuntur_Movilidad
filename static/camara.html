@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kuntur - Sistema Anti-Extorsiones</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --color-dark: #6080F1;
+      --color-primary: #384C81;
+      --color-secondary: #744098;
+      --color-neutro: #EEEEEE;
+      --color-info: #4ABEE2;
+      --color-success: #2FA5CC;
+      --color-danger: #CBAAFF;
+      --color-warning: #FFDD00;
+      --color-white: #FFFFFF;
+      --gradient-primary: linear-gradient(90deg, #744098 0%, #384C81 100%);
+    }
+
+    body {
+      background-color: var(--color-white);
+      font-family: 'Montserrat', sans-serif;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      font-weight: 600;
+    }
+
+    .header, .footer {
+      background: var(--gradient-primary);
+      color: var(--color-white);
+      padding: 1rem;
+    }
+
+    .header-title {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .header-title img {
+      height: 50px;
+    }
+
+    .header-title h3 {
+      margin: 0;
+      font-weight: 600;
+    }
+
+    .camera-panel {
+      background: var(--color-white);
+      padding: 1.5rem;
+      border-radius: 1rem;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      border: 1px solid var(--color-neutro);
+    }
+
+    .status-box {
+      font-size: 0.95rem;
+      margin-top: 1rem;
+    }
+
+    .recording {
+      background-color: #dc3545 !important;
+    }
+
+    .stats-box span {
+      font-weight: bold;
+      font-size: 1.2rem;
+    }
+
+    .btn-lg {
+      font-size: 1.2rem;
+      padding: 0.75rem 1.5rem;
+    }
+
+    .button-primary {
+      background: var(--gradient-primary);
+      color: var(--color-white);
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    .button-primary:hover {
+      background: #2b2f8f;
+    }
+
+    #map {
+      height: 200px;
+      border-radius: 10px;
+      border: 1px solid var(--color-neutro);
+      margin-top: 1rem;
+    }
+
+    /* Status message colors */
+    .text-info { color: #1976d2; }
+    .text-success { color: #388e3c; }
+    .text-warning { color: #f57c00; }
+    .text-danger { color: #d32f2f; }
+  </style>
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"/>
+</head>
+<body>
+  <header class="header d-flex justify-content-between align-items-center">
+    <div class="header-title">
+      <img src="/static/img/Kuntur_blanco.png" alt="Logo" />
+      <h3>Kuntur - Movilidad</h3>
+    </div>
+  </header>
+
+  <main class="container my-4">
+    <div class="row g-4">
+      <div class="col-lg-8">
+        <div class="camera-panel">
+          <h5 class="mb-3">Cámara de Seguridad</h5>
+          <img id="ipCamDisplay" width="100%" height="auto" alt="Cámara IP" crossorigin="anonymous" style="border-radius: 1rem; border: 2px solid var(--color-neutro);" />
+          <div class="mt-4">
+            <button id="recordBtn" class="button-primary btn-lg">Iniciar Grabación</button>
+            <div id="status" class="status-box text-info">Estado: Cámara activa</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="camera-panel">
+          <h6 class="mb-3">Información del Transporte</h6>
+          <div class="stats-box">
+            <p>Unidad: <span>009</span></p>
+            <p>Placa: <span>PCA-123</span></p>
+            <p>Conductor: <span>Juan Chores</span></p>
+            <p>Ruta: <span>Terminal Sur - Av. Colón</span></p>
+            <p>Horario: <span>06:00 - 22:00</span></p>
+            <hr />
+            <p>Ubicación en Tiempo Real:</p>
+            <div id="map"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer d-flex justify-content-center">
+    <p class="m-0">KUNTUR 2025 ©</p>
+  </footer>
+
+  <script>
+    const img = document.getElementById("ipCamDisplay");
+    const recordBtn = document.getElementById("recordBtn");
+    const status = document.getElementById("status");
+
+    const ipCamUrl = "http://192.168.100.249:8080/video";
+    img.src = ipCamUrl;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = 640;
+    canvas.height = 480;
+    const ctx = canvas.getContext("2d");
+
+    let mediaRecorder = null;
+    let chunks = [];
+    let isRecording = false;
+    let captureInterval;
+    let segmentTimeout;
+    let mimeType = 'video/mp4'; // Aquí lo mantengo como mp4 según tu pedido
+
+    function logStatus(msg, type = 'info') {
+      status.className = `status-box text-${type}`;
+      status.textContent = msg;
+    }
+
+    function captureFrame() {
+      if (!isRecording) return;
+      try {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      } catch (e) {
+        logStatus(`Error dibujando frame: ${e.message}`, 'danger');
+      }
+    }
+
+    function startSegment() {
+      if (!isRecording) return;
+
+      chunks = [];
+      const stream = canvas.captureStream(10); // 10 fps
+
+      try {
+        mediaRecorder = new MediaRecorder(stream, { mimeType });
+      } catch(e) {
+        logStatus(`Error al crear MediaRecorder con mimeType ${mimeType}: ${e.message}`, 'danger');
+        // Fallback a webm para que no falle
+        mimeType = 'video/webm';
+        mediaRecorder = new MediaRecorder(stream, { mimeType });
+        logStatus(`Cambiado mimeType a ${mimeType}`, 'warning');
+      }
+
+      mediaRecorder.ondataavailable = e => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+      mediaRecorder.onstop = uploadVideo;
+      mediaRecorder.start();
+
+      segmentTimeout = setTimeout(() => {
+        if (mediaRecorder && mediaRecorder.state === "recording") {
+          mediaRecorder.stop();
+        }
+      }, 25000);
+    }
+
+    async function uploadVideo() {
+      if (chunks.length === 0) {
+        logStatus("Segmento vacío, sin datos para subir.", "warning");
+        if (isRecording) startSegment();
+        return;
+      }
+
+      const blob = new Blob(chunks, { type: mimeType });
+      const extension = mimeType.includes('mp4') ? 'mp4' : 'webm';
+      const fileName = `video_${Date.now()}.${extension}`;
+      const file = new File([blob], fileName, { type: mimeType });
+
+      const formData = new FormData();
+      formData.append("file", file, fileName);
+
+      logStatus("Subiendo segmento...", "info");
+
+      try {
+        const res = await fetch("http://localhost:8001/upload-video/", {
+          method: "POST",
+          body: formData
+        });
+
+        if (!res.ok) throw new Error(`Error HTTP ${res.status}`);
+        const json = await res.json();
+        logStatus(`✅ Segmento subido: ${json.message}`, "success");
+      } catch (e) {
+        logStatus(`❌ Error subida: ${e.message}`, "danger");
+      } finally {
+        if (isRecording) startSegment();
+      }
+    }
+
+    function toggleRecording() {
+      if (isRecording) {
+        isRecording = false;
+        clearInterval(captureInterval);
+        clearTimeout(segmentTimeout);
+        if (mediaRecorder && mediaRecorder.state === "recording") {
+          mediaRecorder.stop();
+        }
+        recordBtn.textContent = "Iniciar Grabación";
+        logStatus("Grabación detenida manualmente", "warning");
+      } else {
+        isRecording = true;
+        recordBtn.textContent = "Detener Grabación";
+        captureInterval = setInterval(captureFrame, 100);
+        startSegment();
+        logStatus("🎥 Grabando en segmentos de 25 segundos...", "info");
+      }
+    }
+
+    recordBtn.onclick = toggleRecording;
+
+    window.onload = () => {
+      logStatus("Cámara activa", "success");
+
+      // Mapa con Leaflet
+      const map = L.map('map').setView([0, 0], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map);
+
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(position => {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          map.setView([lat, lon], 15);
+          L.marker([lat, lon]).addTo(map).bindPopup("Ubicación actual").openPopup();
+        }, error => {
+          console.error("Error obteniendo ubicación:", error);
+        });
+      } else {
+        console.error("Geolocalización no soportada");
+      }
+    };
+  </script>
+</body>
+</html>
