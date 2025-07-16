@@ -1,6 +1,5 @@
 # Sistema de Seguridad Kuntur Movilidad
 
-![Kuntur Movilidad Logo](https://via.placeholder.com/150?text=Kuntur+Logo)  
 Sistema avanzado de detección de comportamientos sospechosos mediante análisis de video en tiempo real con inteligencia artificial.
 
 ---
