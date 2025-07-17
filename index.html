@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Registro - Kuntur</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(90deg, #744098 0%, #384C81 100%);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .register-card {
+            width: 100%;
+            max-width: 500px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        .logo {
+            width: 120px;
+            margin: 0 auto 20px;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="register-card p-4">
+        <img src="/static/img/Kuntur_blanco.png" alt="Logo Kuntur" class="logo">
+        <h3 class="text-center mb-4">Registro de Nueva Cámara</h3>
+
+        <form id="registerForm">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Cooperativa</label>
+                    <input type="text" class="form-control" name="cooperative" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Unidad (Bus)</label>
+                    <input type="text" class="form-control" name="bus_unit" required>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Placa del Vehículo</label>
+                <input type="text" class="form-control" name="plate" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Nombre del Chofer</label>
+                <input type="text" class="form-control" name="driver_name" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">IP de la Cámara</label>
+                <input type="text" class="form-control" name="camera_ip" required>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Usuario</label>
+                    <input type="text" class="form-control" name="username" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Contraseña</label>
+                    <input type="password" class="form-control" name="password" required>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">Registrar Cámara</button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+
+            try {
+                const response = await fetch('/register', {
+                    method: 'POST',
+                    body: JSON.stringify(Object.fromEntries(formData)),
+                    headers: {'Content-Type': 'application/json'}
+                });
+
+                if (response.ok) {
+                    alert('Registro exitoso!');
+                    window.location.href = '/login.html';
+                } else {
+                    alert('Error en el registro');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error de conexión');
+            }
+        });
+    </script>
+</body>
+</html>

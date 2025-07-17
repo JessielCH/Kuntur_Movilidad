@@ -19,11 +19,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Configurar entorno antes de cualquier import
+# Configurar entorno
 os.environ['ULTRALYTICS_AUTOUPDATE'] = 'disabled'
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 
-# Configuración actualizada de Backblaze
+# Configuración Backblaze
 B2_KEY_ID = os.getenv("B2_KEY_ID", "005edb6e50f32700000000003")
 B2_APP_KEY = os.getenv("B2_APP_KEY", "K005P0f0Ubgb5zP7aFezbKC/6ri7l0Y")
 B2_BUCKET_ID = os.getenv("B2_BUCKET_ID", "3e5dfb167e65e0af93720710")
@@ -31,12 +31,11 @@ B2_BUCKET_ID = os.getenv("B2_BUCKET_ID", "3e5dfb167e65e0af93720710")
 # Rutas locales
 CARPETA_VIDEOS = "./data/videos"
 CARPETA_PROCESADOS = "./data/procesados"
-CARPETA_POR_TRANSCRIBIR = "./data/por_transcribir"  # Nueva carpeta para audio
 
-# Importar después de configurar el entorno
+# Importar utilidades
 from utils.video_processing import procesar_video
 from utils.backblaze_utils import subir_video_b2
-from utils.audio_utils import procesar_audio  # Nueva utilidad para audio
+from utils.audio_utils import procesar_audio
 
 
 class VideoHandler(FileSystemEventHandler):
@@ -62,6 +61,7 @@ def procesar_video_local(video_path):
     # Guardar resultados JSON
     nombre_base = os.path.basename(video_path).rsplit('.', 1)[0]
     json_salida = os.path.join(CARPETA_PROCESADOS, f"{nombre_base}.json")
+
     with open(json_salida, 'w', encoding='utf-8') as f:
         json.dump(resultados, f, indent=2, ensure_ascii=False)
     logger.info(f"Resultados guardados en: {json_salida}")
@@ -98,15 +98,9 @@ def procesar_video_local(video_path):
         os.rename(video_path, destino_original)
         logger.info(f"Archivos movidos a: {CARPETA_PROCESADOS}")
 
-        # Si hay alertas y el video se subió, procesar audio
+        # Procesar audio y generar JSON final
         if resultados.get("alertas") and video_subido:
-            # Mover video original a carpeta para transcripción
-            os.makedirs(CARPETA_POR_TRANSCRIBIR, exist_ok=True)
-            destino_transcribir = os.path.join(CARPETA_POR_TRANSCRIBIR, os.path.basename(video_path))
-            os.rename(destino_original, destino_transcribir)
-
-            # Procesar audio
-            procesar_audio(destino_transcribir, json_salida)
+            procesar_audio(destino_original, json_salida)
     except Exception as e:
         logger.error(f"Error moviendo archivos: {str(e)}")
 
@@ -115,7 +109,7 @@ if __name__ == "__main__":
     # Crear carpetas si no existen
     os.makedirs(CARPETA_VIDEOS, exist_ok=True)
     os.makedirs(CARPETA_PROCESADOS, exist_ok=True)
-    os.makedirs(CARPETA_POR_TRANSCRIBIR, exist_ok=True)  # Nueva carpeta
+    os.makedirs(os.path.join("data", "frames"), exist_ok=True)
 
     # Iniciar monitorización
     event_handler = VideoHandler()

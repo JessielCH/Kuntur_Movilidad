@@ -8,6 +8,17 @@ python-multipart==0.0.9
 gdown==5.1.0
 langchain-groq==0.1.2
 watchdog==4.0.0
-faster-whisper==0.10.0
+faster-whisper
 ffmpeg-python==0.2.0
 torchaudio==2.2.1
+numpy==1.26.4
+pandas==2.2.1
+langchain-core==0.1.42
+python-dotenv==1.0.1
+ctranslate2==4.6.0
+transformers==4.41.1
+Pillow==10.3.0
+lapx>=0.5.2 # Nuevo requerimiento
+tokenizers
+pymongo
+

@@ -117,9 +117,10 @@ def download_file_from_bucket(key_id, app_key, file_id, local_path):
 
         file_size = os.path.getsize(local_path)
         elapsed = time.time() - start_time
-        logger.info(f"✅ Archivo descargado: {local_path} ({file_size / 1024 / 1024:.2f} MB en {elapsed:.1f}s)")
+        logger.info(
+            f"Video subido exitosamente: {nombre_archivo} ({file_size / 1024 / 1024:.2f} MB en {elapsed:.1f}s)")
         return True
 
     except Exception as e:
-        logger.error(f"Error en descarga: {str(e)}")
+        logger.error(f"Error en subida: {str(e)}")
         return False

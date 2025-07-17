@@ -1,0 +1,67 @@
+# Archivos de entorno
+.env
+*.env
+*.env.local
+
+# Directorios de datos
+data/
+!data/.gitkeep
+
+# Archivos de registro
+*.log
+
+# Modelos de IA
+modelos/
+
+# Archivos de video procesados
+*.mp4
+*.avi
+*.mov
+*.webm
+
+# Python
+__pycache__/
+*.py[cod]
+.python-version
+
+# Entornos virtuales
+.venv*/
+venv*/
+env/
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Archivos de configuración de IDE
+.idea/
+.vscode/
+
+# Archivos temporales
+*.tmp
+*.temp
+
+# Archivos de caché
+.cache/
+
+# Backblaze credentials
+b2_credentials
+
+# Archivos de checkpoint
+*.ckpt
+
+# Archivos de imagen de frames
+*.jpg
+*.jpeg
+*.png
+
+# Archivos JSON de resultados
+*.json
+!requirements.txt
+!index.html
+!main.py
+!local_processor.py
+!video_processing.py
+!audio_utils.py
+!backblaze_utils.py
+!llm_utils.py

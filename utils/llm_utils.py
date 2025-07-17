@@ -2,6 +2,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
 import logging
 import os
+import re
 
 # Configura logging
 logging.basicConfig(
@@ -13,75 +14,67 @@ logger = logging.getLogger(__name__)
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "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")
 MODEL_LLM = "llama3-8b-8192"
 
-
-def generar_justificacion(descripcion):
-    prompt = ChatPromptTemplate.from_template(
-        "Eres un experto en seguridad. Genera una justificación técnica concisa "
-        "(máximo 2 oraciones) en español para esta alerta:\n"
-        "Alerta: {alerta}\n\n"
-        "Justificación:"
-    )
-
-    try:
-        llm = ChatGroq(temperature=0.7, model_name=MODEL_LLM, api_key=GROQ_API_KEY)
-        chain = prompt | llm
-        return chain.invoke({"alerta": descripcion}).content
-    except Exception as e:
-        logger.error(f"Error generando justificación: {e}")
-        return "Justificación no disponible"
+PALABRAS_CLAVE = ["cartera", "celular", "dame", "quieto", "disparo", "arma", "matar",
+                  "muerte", "ayuda", "robo", "asalto", "pistola", "revólver", "cuchillo",
+                  "dispara", "asesino", "socorro", "ladrón", "delincuente", "hurto",
+                  "móvil", "telefono", "bolso", "cartera", "billetera", "dinero", "anillo"]
 
 
-def generar_resumen(texto):
-    """Generar resumen del texto usando LLM"""
-    if not texto or len(texto.strip()) < 10:
-        return "Sin contenido para resumir"
+def contiene_palabras_clave(texto):
+    """Revisar si el texto contiene palabras clave de peligro con similitud"""
+    if not texto:
+        return False
 
-    prompt = ChatPromptTemplate.from_template(
-        "Eres un experto en seguridad. Genera un resumen conciso (1-2 frases) en español "
-        "del siguiente texto relacionado con un incidente de seguridad:\n"
-        "Texto: {texto}\n\n"
-        "Resumen:"
-    )
-
-    try:
-        llm = ChatGroq(temperature=0.5, model_name=MODEL_LLM, api_key=GROQ_API_KEY)
-        chain = prompt | llm
-        return chain.invoke({"texto": texto}).content
-    except Exception as e:
-        logger.error(f"Error generando resumen: {e}")
-        return "Resumen no disponible"
+    texto = texto.lower()
+    for palabra in PALABRAS_CLAVE:
+        # Buscar palabras similares (ej: "celular", "celulares", "cel")
+        if re.search(rf"\b{palabra[:3]}", texto):
+            return True
+    return False
 
 
-def generar_descripcion_enriquecida(analisis_visual, transcripcion_audio):
-    """Generar descripción enriquecida combinando análisis visual y auditivo"""
-    # Extraer información visual
-    eventos = []
-    if "alertas" in analisis_visual:
-        for alerta in analisis_visual["alertas"]:
-            eventos.append(f"{alerta['tipo']} (confianza: {alerta.get('confianza', 0):.2f})")
+def generar_descripcion_enriquecida(analisis_visual, transcripcion_audio, frame_captions):
+    """Generar descripción enriquecida concisa (max 30 palabras)"""
+    # Información de alertas
+    alertas_info = ""
+    if "alertas" in analisis_visual and analisis_visual["alertas"]:
+        alerta = analisis_visual["alertas"][0]
+        alertas_info = f"Alerta: {alerta['tipo']} (conf: {alerta['confianza']:.2f})"
 
-    info_visual = ", ".join(eventos) if eventos else "Sin eventos visuales detectados"
+    # Información de audio
+    audio_info = ""
+    if contiene_palabras_clave(transcripcion_audio):
+        # Extraer solo las palabras clave relevantes
+        palabras_detectadas = [p for p in PALABRAS_CLAVE if re.search(rf"\b{p[:3]}", transcripcion_audio.lower())]
+        audio_info = f"Palabras clave: {', '.join(palabras_detectadas[:3])}"
+    elif transcripcion_audio:
+        audio_info = "Sin palabras clave relevantes"
 
-    # Limitar tamaño de transcripción
-    transcripcion_limitada = transcripcion_audio[:1000] if transcripcion_audio else "Sin audio"
+    # Información de frames
+    frames_info = " | ".join(frame_captions) if frame_captions else "Sin capturas"
 
     # Crear prompt para LLM
     prompt = ChatPromptTemplate.from_template(
-        "Eres un analista de seguridad experto en temas de asaltos y acosos en transporte publico. Si detectas dentro del audio palabras como Telefono,Catera,Celular o parecidos hablamos de un asalto"
-        "si detectas palabras como hola guapa hermosa y asi hablamos de acoso. Combina la siguiente información para crear "
-        "una descripción coherente de un posible incidente de seguridad:\n\n"
-        "Análisis visual: {info_visual}\n"
-        "Transcripción de audio: {transcripcion}\n\n"
-        "Genera una descripción de 2-3 oraciones en español que integre ambas fuentes de información:"
+        "Eres un experto en seguridad en transporte publico. En máximo 2 oraciones y 50 palabras, genera una descripción concisa de un asalto y lo que ocurren en el. Clasifica que siempre se esta usando un arma, no describas cual"
+        "Usa solo la información relevante. Información:\n"
+        "Visual: {alertas_info}\n"
+        "Audio: {audio_info}\n"
+        "Frames: {frames_info}\n"
+        "Descripción:"
     )
 
     try:
         llm = ChatGroq(temperature=0.7, model_name=MODEL_LLM, api_key=GROQ_API_KEY)
         chain = prompt | llm
-        return chain.invoke({
-            "info_visual": info_visual,
-            "transcripcion": transcripcion_limitada
+        descripcion = chain.invoke({
+            "alertas_info": alertas_info,
+            "audio_info": audio_info,
+            "frames_info": frames_info
         }).content
+
+        # Limitar a 30 palabras
+        palabras = descripcion.split()
+        return " ".join(palabras[:50])
     except Exception as e:
         logger.error(f"Error generando descripción enriquecida: {e}")
         return "Descripción no disponible"
