@@ -7,8 +7,7 @@ Sistema avanzado de detección de comportamientos sospechosos mediante análisis
 ## 🚀 Características Principales
 
 - 🎥 Captura de video desde cámaras IP  
-- 🧠 Detección de personas y armas con YOLOv8  
-- 📏 Análisis de distancias e interacciones  
+- 🧠 Detección de armas con YOLOv8  
 - ⚠️ Sistema de alertas inteligentes  
 - ☁️ Almacenamiento en Backblaze B2  
 - 💬 Justificación de alertas con LLM (Llama 3)  
@@ -21,11 +20,7 @@ PYTHON 3.11
 
 ```bash
 # Clonar repositorio
-git clone https://github.com/FostDull/Grupo_5-Movilidad.git
-cd Grupo_5-Movilidad
-
-# Cambiar a rama de desarrollo
-git checkout Jessiel
+git clone https://github.com/JessielCH/Kuntur_Movilidad
 
 # Instalar dependencias
 pip install -r requirements.txt
