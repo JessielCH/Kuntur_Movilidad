@@ -15,7 +15,8 @@ Sistema avanzado de detección de comportamientos sospechosos mediante análisis
 - 📼 Grabación automática de segmentos de 25 segundos en `.mp4`
 
 ---
-
+##Verison de Python
+PYTHON 3.11
 ## 📦 Instalación
 
 ```bash
