@@ -47,8 +47,8 @@ Cámara IP ──▶ Servidor FastAPI ──▶ Procesamiento IA (YOLOv8 + Whisp
 ### 1. Clona el repositorio:
 
 ```bash
-git clone https://github.com/tu-usuario/kuntur.git
-cd kuntur
+git clone https://github.com/JessielCH/Kuntur_Movilidad.git
+cd Kuntur_Movilidad
 ```
 
 ### 2. Crea y activa un entorno virtual:
