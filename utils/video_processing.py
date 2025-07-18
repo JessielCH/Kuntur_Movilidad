@@ -82,8 +82,6 @@ def procesar_video(video_path):
 
     # Resultados
     resultados = {
-        "video": os.path.basename(video_path),
-        "fecha_procesamiento": datetime.now().isoformat(),
         "alertas": [],
         "key_frames": []  # Frames clave para análisis
     }

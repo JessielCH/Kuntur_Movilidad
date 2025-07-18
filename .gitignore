@@ -1,67 +1,87 @@
-# Archivos de entorno
+# Archivos de entorno y configuraciones sensibles
 .env
-*.env
-*.env.local
+.env.*
+secrets.py
+config.ini
 
-# Directorios de datos
+# Archivos de bases de datos
+*.db
+*.sqlite3
+*.sqlite
+*.db-journal
+
+# Directorios de datos generados
 data/
-!data/.gitkeep
-
-# Archivos de registro
-*.log
-
-# Modelos de IA
 modelos/
+__pycache__/
 
-# Archivos de video procesados
+# Archivos de video y multimedia
 *.mp4
 *.avi
 *.mov
 *.webm
-
-# Python
-__pycache__/
-*.py[cod]
-.python-version
-
-# Entornos virtuales
-.venv*/
-venv*/
-env/
-
-# Archivos de sistema
-.DS_Store
-Thumbs.db
-
-# Archivos de configuración de IDE
-.idea/
-.vscode/
-
-# Archivos temporales
-*.tmp
-*.temp
-
-# Archivos de caché
-.cache/
-
-# Backblaze credentials
-b2_credentials
-
-# Archivos de checkpoint
-*.ckpt
-
-# Archivos de imagen de frames
+*.wav
 *.jpg
 *.jpeg
 *.png
 
-# Archivos JSON de resultados
-*.json
-!requirements.txt
-!index.html
-!main.py
-!local_processor.py
-!video_processing.py
-!audio_utils.py
-!backblaze_utils.py
-!llm_utils.py
+# Archivos de logs
+*.log
+logs/
+
+# Entornos virtuales
+venv/
+env/
+.venv/
+venv*/
+env*/
+.venv*/
+
+# Archivos de IDE
+.idea/
+.vscode/
+*.code-workspace
+*.sublime-project
+*.sublime-workspace
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Archivos de caché de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Archivos de caché de Jupyter
+.ipynb_checkpoints/
+
+# Archivos de paquetes y compilación
+dist/
+build/
+*.egg-info/
+*.egg
+*.whl
+
+# Archivos de documentación generados
+docs/_build/
+docs/_static/
+docs/_templates/
+
+# Archivos de cobertura
+.coverage
+htmlcov/
+
+# Archivos de prueba temporales
+test_output/
+tmp/
+temp/
+
+# Archivos de macOS
+._*
+
+# Archivos de Windows
+*.lnk

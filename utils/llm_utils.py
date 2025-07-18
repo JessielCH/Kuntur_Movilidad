@@ -34,7 +34,7 @@ def contiene_palabras_clave(texto):
 
 
 def generar_descripcion_enriquecida(analisis_visual, transcripcion_audio, frame_captions):
-    """Generar descripción enriquecida concisa (max 30 palabras)"""
+    """Generar descripción enriquecida concisa (50-100 palabras)"""
     # Información de alertas
     alertas_info = ""
     if "alertas" in analisis_visual and analisis_visual["alertas"]:
@@ -44,7 +44,6 @@ def generar_descripcion_enriquecida(analisis_visual, transcripcion_audio, frame_
     # Información de audio
     audio_info = ""
     if contiene_palabras_clave(transcripcion_audio):
-        # Extraer solo las palabras clave relevantes
         palabras_detectadas = [p for p in PALABRAS_CLAVE if re.search(rf"\b{p[:3]}", transcripcion_audio.lower())]
         audio_info = f"Palabras clave: {', '.join(palabras_detectadas[:3])}"
     elif transcripcion_audio:
@@ -55,7 +54,7 @@ def generar_descripcion_enriquecida(analisis_visual, transcripcion_audio, frame_
 
     # Crear prompt para LLM
     prompt = ChatPromptTemplate.from_template(
-        "Eres un experto en seguridad en transporte publico. En máximo 2 oraciones y 50 palabras, genera una descripción concisa de un asalto y lo que ocurren en el. Clasifica que siempre se esta usando un arma, no describas cual"
+        "Eres un experto en seguridad en transporte publico. En 50-100 palabras, genera una descripción concisa de un asalto. "
         "Usa solo la información relevante. Información:\n"
         "Visual: {alertas_info}\n"
         "Audio: {audio_info}\n"
@@ -72,9 +71,7 @@ def generar_descripcion_enriquecida(analisis_visual, transcripcion_audio, frame_
             "frames_info": frames_info
         }).content
 
-        # Limitar a 30 palabras
-        palabras = descripcion.split()
-        return " ".join(palabras[:50])
+        return descripcion
     except Exception as e:
         logger.error(f"Error generando descripción enriquecida: {e}")
         return "Descripción no disponible"

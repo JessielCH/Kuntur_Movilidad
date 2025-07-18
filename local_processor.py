@@ -5,6 +5,9 @@ import json
 import re
 import traceback
 import logging
+import threading
+import shutil
+from datetime import datetime
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
@@ -36,6 +39,7 @@ CARPETA_PROCESADOS = "./data/procesados"
 from utils.video_processing import procesar_video
 from utils.backblaze_utils import subir_video_b2
 from utils.audio_utils import procesar_audio
+from utils.db_utils import get_user_data
 
 
 class VideoHandler(FileSystemEventHandler):
@@ -58,51 +62,86 @@ def procesar_video_local(video_path):
         logger.error("Error en procesamiento de video")
         return
 
-    # Guardar resultados JSON
-    nombre_base = os.path.basename(video_path).rsplit('.', 1)[0]
-    json_salida = os.path.join(CARPETA_PROCESADOS, f"{nombre_base}.json")
+    # Extraer username del filename: usuario@timestamp.mp4
+    video_filename = os.path.basename(video_path)
+    nombre_base = video_filename.rsplit('.', 1)[0]
+    username = nombre_base.split("@")[0] if "@" in nombre_base else "unknown"
 
-    with open(json_salida, 'w', encoding='utf-8') as f:
-        json.dump(resultados, f, indent=2, ensure_ascii=False)
-    logger.info(f"Resultados guardados en: {json_salida}")
+    # Obtener datos de usuario desde la base de datos
+    user_data = get_user_data(username) or {}
+    unidad = user_data.get("unidad", "desconocida")
+    chofer = user_data.get("chofer", "desconocido")
 
-    # Subir a Backblaze si hay alertas
-    video_subido = False
+    # Crear estructura de carpetas: usuario/unidad/fecha
+    fecha_actual = datetime.now().strftime("%Y-%m-%d")
+    hora_actual = datetime.now().strftime("%H-%M-%S")
+    estructura_carpeta = os.path.join(CARPETA_PROCESADOS, username, unidad, fecha_actual)
+    os.makedirs(estructura_carpeta, exist_ok=True)
+
+    # Manejar videos con alertas
     if resultados.get("alertas"):
-        nombre_limpio = re.sub(r'[^a-zA-Z0-9_\-]', '_', nombre_base)
-        nombre_evidencia = f"evidencia_kuntur_{nombre_limpio}.mp4"
+        # Crear nombre estructurado
+        nombre_evidencia = f"{hora_actual}.mp4"
+        b2_path = f"{username}/{unidad}/{fecha_actual}/{nombre_evidencia}"
 
+        # Subir a Backblaze
         try:
-            logger.info(f"Intentando subir: {video_procesado} como {nombre_evidencia}")
+            logger.info(f"Subiendo video a Backblaze: {b2_path}")
             subido = subir_video_b2(
                 video_procesado,
-                nombre_evidencia,
+                b2_path,
                 B2_KEY_ID,
                 B2_APP_KEY,
                 B2_BUCKET_ID
             )
             if subido:
-                logger.info(f"¡Video subido a Backblaze como {nombre_evidencia}!")
-                video_subido = True
+                logger.info(f"¡Video subido a Backblaze como {b2_path}!")
+            else:
+                logger.error("Error al subir video a Backblaze")
         except Exception as e:
             logger.error(f"Error subiendo a Backblaze: {str(e)}")
 
-    # Mover archivos a carpeta procesados
-    try:
-        # Mover video procesado
-        destino_procesado = os.path.join(CARPETA_PROCESADOS, os.path.basename(video_procesado))
-        os.rename(video_procesado, destino_procesado)
+        # Mover archivos a carpeta estructurada
+        try:
+            # Mover video procesado
+            destino_procesado = os.path.join(estructura_carpeta, f"{hora_actual}_procesado.mp4")
+            shutil.move(video_procesado, destino_procesado)
 
-        # Mover video original
-        destino_original = os.path.join(CARPETA_PROCESADOS, os.path.basename(video_path))
-        os.rename(video_path, destino_original)
-        logger.info(f"Archivos movidos a: {CARPETA_PROCESADOS}")
+            # Mover video original
+            destino_original = os.path.join(estructura_carpeta, nombre_evidencia)
+            shutil.move(video_path, destino_original)
+            logger.info(f"Archivos movidos a: {estructura_carpeta}")
 
-        # Procesar audio y generar JSON final
-        if resultados.get("alertas") and video_subido:
-            procesar_audio(destino_original, json_salida)
-    except Exception as e:
-        logger.error(f"Error moviendo archivos: {str(e)}")
+            # Procesar audio y generar JSON final
+            procesar_audio(destino_original, resultados, username, nombre_evidencia, b2_path)
+        except Exception as e:
+            logger.error(f"Error moviendo archivos: {str(e)}")
+    else:
+        # Eliminar videos sin alertas
+        try:
+            os.remove(video_path)
+            os.remove(video_procesado)
+            logger.info("Videos sin alertas eliminados")
+        except Exception as e:
+            logger.error(f"Error eliminando videos: {str(e)}")
+
+
+# Nueva función de limpieza automática
+def limpieza_automatica():
+    while True:
+        logger.info("Ejecutando limpieza automática...")
+        try:
+            # Limpiar solo carpeta de videos (los procesados se mantienen)
+            for filename in os.listdir(CARPETA_VIDEOS):
+                file_path = os.path.join(CARPETA_VIDEOS, filename)
+                if os.path.isfile(file_path):
+                    file_age = time.time() - os.path.getmtime(file_path)
+                    if file_age > 600:  # 10 minutos
+                        os.remove(file_path)
+                        logger.info(f"Borrado: {file_path}")
+        except Exception as e:
+            logger.error(f"Error en limpieza: {str(e)}")
+        time.sleep(600)  # Esperar 10 minutos
 
 
 if __name__ == "__main__":
@@ -111,7 +150,11 @@ if __name__ == "__main__":
     os.makedirs(CARPETA_PROCESADOS, exist_ok=True)
     os.makedirs(os.path.join("data", "frames"), exist_ok=True)
 
-    # Iniciar monitorización
+    # Iniciar hilo de limpieza automática
+    cleaner = threading.Thread(target=limpieza_automatica, daemon=True)
+    cleaner.start()
+
+    # Iniciar monitorización de nuevos videos
     event_handler = VideoHandler()
     observer = Observer()
     observer.schedule(event_handler, CARPETA_VIDEOS, recursive=False)

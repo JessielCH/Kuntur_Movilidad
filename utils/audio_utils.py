@@ -4,8 +4,8 @@ import json
 import requests
 import subprocess
 import logging
-import ssl  # Importar el módulo ssl
-import certifi  # Importar certifi
+import ssl
+import certifi
 from datetime import datetime
 from PIL import Image
 from transformers import pipeline
@@ -35,53 +35,14 @@ MONGO_DB = os.getenv("MONGO_DB", "kuntur_db")
 MONGO_COLLECTION = os.getenv("MONGO_COLLECTION", "alertas")
 
 
-def conectar_mongodb():
-    """Conectar a MongoDB Atlas"""
-    if not MONGO_URI:
-        logger.warning("No se configuró MONGO_URI")
-        return None
-
+def guardar_json_mongodb(db_name, collection_name, data):
+    """Guarda un documento JSON en MongoDB local"""
     try:
-        # Intento 1: Con certificados actualizados
-        client = MongoClient(
-            MONGO_URI,
-            tlsCAFile=certifi.where(),
-            server_api=ServerApi('1')
-        )
-        client.admin.command('ping')
-        logger.info("Conexión exitosa a MongoDB Atlas")
-        return client
-    except Exception as e:
-        logger.error(f"Error conectando a MongoDB con certificados: {e}")
-
-        try:
-            # Intento 2: Sin verificación SSL (solo para desarrollo)
-            client = MongoClient(
-                MONGO_URI,
-                ssl=True,
-                ssl_cert_reqs=ssl.CERT_NONE,
-                server_api=ServerApi('1')
-            )
-            client.admin.command('ping')
-            logger.warning("Conexión exitosa sin verificación SSL")
-            return client
-        except Exception as e2:
-            logger.error(f"Error en conexión alternativa: {e2}")
-            return None
-
-
-def guardar_en_mongodb(data):
-    """Guardar documento en MongoDB"""
-    client = conectar_mongodb()
-    if not client:
-        logger.warning("No se pudo conectar a MongoDB, omitiendo guardado")
-        return False
-
-    try:
-        db = client[MONGO_DB]
-        collection = db[MONGO_COLLECTION]
+        client = MongoClient("mongodb://localhost:27017/")
+        db = client[db_name]
+        collection = db[collection_name]
         result = collection.insert_one(data)
-        logger.info(f"Datos guardados en MongoDB: {result.inserted_id}")
+        logger.info(f"JSON guardado en MongoDB: {collection_name} - ID: {result.inserted_id}")
         return True
     except Exception as e:
         logger.error(f"Error guardando en MongoDB: {e}")
@@ -91,31 +52,29 @@ def guardar_en_mongodb(data):
 
 
 def notificacion_a_upc(url_evidencia, descripcion):
-    """Enviar notificación a UPC"""
-    upc_endpoint = os.getenv("UPC_ENDPOINT", "")
-
-    if not upc_endpoint:
-        logger.info("No se configuró endpoint de UPC, omitiendo notificación")
-        return False
-
-    payload = {
-        "descripcion": descripcion,
-        "url_evidencia": url_evidencia,
-        "fecha": datetime.now().isoformat()
-    }
-
+    """Envía notificación a UPC usando el endpoint FastAPI"""
     try:
-        respuesta = requests.post(
-            upc_endpoint,
-            json=payload,
-            timeout=10,
-            verify=False  # Desactivar verificación SSL
-        )
-        logger.info(f"Notificación enviada a UPC. Código: {respuesta.status_code}")
-        return respuesta.status_code == 200
+        # Construir evidencia básica
+        evidencia = {
+            "descripcion": descripcion,
+            "url_evidencia": url_evidencia,
+            "fecha": datetime.now().isoformat()
+        }
+
+        # Llamar al endpoint local de FastAPI
+        local_upc_endpoint = "http://localhost:8000/enviar-evidencia-upc"
+        response = requests.post(local_upc_endpoint, json=evidencia, timeout=5)
+
+        if response.status_code == 200:
+            logger.info("Notificación enviada a UPC a través de FastAPI")
+            return True
+        else:
+            logger.error(f"Error enviando a UPC: {response.status_code} - {response.text}")
+            return False
     except Exception as e:
-        logger.error(f"Error enviando notificación a UPC: {e}")
+        logger.error(f"Excepción al enviar a UPC: {e}")
         return False
+
 
 def get_public_ip():
     """Obtener la IP pública del sistema"""
@@ -192,64 +151,47 @@ def analyze_frames(frame_paths):
     return captions
 
 
-def procesar_audio(video_path, visual_json_path):
-    """Procesar audio para un video y generar JSON final"""
-    file_name = os.path.basename(video_path)
-    logger.info(f"Procesando audio para: {file_name}")
-
-    # Cargar análisis visual
-    try:
-        with open(visual_json_path, 'r', encoding='utf-8') as f:
-            visual_data = json.load(f)
-        logger.info("Análisis visual cargado exitosamente")
-    except Exception as e:
-        logger.error(f"Error cargando análisis visual: {e}")
-        return
-
-    # Extraer audio
-    base_name = os.path.splitext(file_name)[0]
-    audio_path = os.path.join(os.path.dirname(video_path), f"{base_name}.wav")
-    if not extract_audio(video_path, audio_path):
-        logger.error(f"Error extrayendo audio de: {file_name}")
-        return
-
-    # Transcribir audio
-    transcription = transcribe_audio(audio_path)
-    logger.info(f"Transcripción completada: {len(transcription)} caracteres")
-
-    # Analizar frames clave
+def procesar_audio(video_path, visual_data, username, video_filename, b2_path):
+    """Procesa audio y genera JSON final"""
+    # Análisis de frames siempre se ejecuta
     frame_captions = []
-    if "key_frames" in visual_data and visual_data["key_frames"]:
+    if visual_data.get("key_frames"):
         frame_captions = analyze_frames(visual_data["key_frames"])
 
-    # Obtener ubicación por IP pública
-    public_ip = get_public_ip()
-    location = get_location_by_ip(public_ip)
+    # Procesar audio si es posible (no bloqueante)
+    transcription = ""
+    try:
+        audio_path = f"temp_{video_filename}.wav"
+        if extract_audio(video_path, audio_path):
+            transcription = transcribe_audio(audio_path) or ""
+            os.remove(audio_path)
+    except Exception as e:
+        logger.error(f"Error procesando audio: {e}")
 
-    # Generar JSON final
-    result = {
+    # Construir JSON final con URL público de Backblaze
+    base_url = os.getenv("B2_PUBLIC_BASE_URL", "https://f005.backblazeb2.com/file/evidenciaskunturmovilidad/")
+    public_url = f"{base_url}{b2_path}"
+
+    # Construir objeto evidencia
+    evidencia = {
         "descripcion": generar_descripcion_enriquecida(visual_data, transcription, frame_captions),
-        "ubicacion": location,
-        "ip_camara": os.getenv("CAM_IP", "192.168.100.249"),
-        "url_evidencia": f"https://f000.backblazeb2.com/file/videoKr/{file_name}"
+        "ubicacion": get_location_by_ip(get_public_ip()),
+        "ip_camara": os.getenv("CAM_IP", ""),
+        "usuario": username,
+        "url_evidencia": public_url,
+        "fecha": datetime.now().isoformat(),
+        "b2_path": b2_path,
+        "estado": "nuevo"  # Estado inicial: nuevo
     }
 
-    # Guardar resultado
-    output_path = os.path.join(os.path.dirname(visual_json_path), f"{base_name}_final.json")
-    with open(output_path, "w", encoding='utf-8') as f:
-        json.dump(result, f, indent=2, ensure_ascii=False)
-
-    logger.info(f"Análisis completo guardado en: {output_path}")
-
-    # Guardar en MongoDB Atlas
-    guardar_en_mongodb(result)
+    # Guardar en MongoDB local (colección Evidencias)
+    guardar_json_mongodb("Kuntur", "Evidencias", evidencia)
 
     # Enviar notificación a UPC
-    notificacion_a_upc(result["url_evidencia"], result["descripcion"])
+    notificacion_a_upc(public_url, evidencia["descripcion"])
 
     # Limpiar archivos temporales
     try:
-        os.remove(audio_path)
         for frame_path in visual_data.get("key_frames", []):
             os.remove(frame_path)
     except Exception as e:

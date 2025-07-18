@@ -18,7 +18,8 @@ python-dotenv==1.0.1
 ctranslate2==4.6.0
 transformers==4.41.1
 Pillow==10.3.0
-lapx>=0.5.2 # Nuevo requerimiento
+lapx>=0.5.2
 tokenizers
 pymongo
-
+sqlalchemy>=2.0.0
+bcrypt
