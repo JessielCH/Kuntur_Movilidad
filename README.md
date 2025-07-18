@@ -142,15 +142,6 @@ kuntur/
 ```
 
 ---
-
-## 🖼️ Capturas de Pantalla
-
-| Inicio de Sesión | Dashboard Principal | Cámara en Tiempo Real |
-|------------------|---------------------|------------------------|
-| ![Login](https://static/img/screenshots/login.png) | ![Dashboard](https://static/img/screenshots/dashboard.png) | ![Cámara](https://static/img/screenshots/camera.png) |
-
----
-
 ## 🛠️ Tecnologías Utilizadas
 
 **Inteligencia Artificial:**
