@@ -11,7 +11,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-GROQ_API_KEY = os.getenv("GROQ_API_KEY", "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")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 MODEL_LLM = "llama3-8b-8192"
 
 PALABRAS_CLAVE = ["cartera", "celular", "dame", "quieto", "disparo", "arma", "matar",
