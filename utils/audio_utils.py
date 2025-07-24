@@ -31,8 +31,8 @@ blip_pipe = pipeline("image-to-text", model="Salesforce/blip-image-captioning-ba
 
 # Configurar MongoDB
 MONGO_URI = os.getenv("MONGO_URI")
-MONGO_DB = os.getenv("MONGO_DB", "kuntur_db")
-MONGO_COLLECTION = os.getenv("MONGO_COLLECTION", "alertas")
+MONGO_DB = os.getenv("MONGO_DB")
+MONGO_COLLECTION = os.getenv("MONGO_COLLECTION")
 
 
 def guardar_json_mongodb(db_name, collection_name, data):
@@ -169,7 +169,7 @@ def procesar_audio(video_path, visual_data, username, video_filename, b2_path):
         logger.error(f"Error procesando audio: {e}")
 
     # Construir JSON final con URL público de Backblaze
-    base_url = os.getenv("B2_PUBLIC_BASE_URL", "https://f005.backblazeb2.com/file/evidenciaskunturmovilidad/")
+    base_url = os.getenv("B2_PUBLIC_BASE_URL")
     public_url = f"{base_url}{b2_path}"
 
     # Construir objeto evidencia
