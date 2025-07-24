@@ -1,15 +1,10 @@
-
-# Kuntur - Sistema de Seguridad para Transporte Público 🦅🚌
-
-[![Python](https://img.shields.io/badge/Python-3.9%2B-blue)](https://www.python.org/)
-[![Framework](https://img.shields.io/badge/Framework-FastAPI-green)](https://fastapi.tiangolo.com/)
-[![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
+# Kuntur - Sistema de Seguridad para Transporte Público 🦅🚌  
 
 **Kuntur** es un sistema avanzado de seguridad para el transporte público que utiliza inteligencia artificial para detectar **armas** y **situaciones de riesgo** en tiempo real. El sistema analiza video desde cámaras IP, procesa audio ambiental y genera alertas automáticas para las autoridades.
 
 ---
 
-## ✨ Características Clave
+## ✨ Características Clave  
 
 - 🔍 **Detección de armas en tiempo real** con YOLOv8  
 - 🎙️ **Análisis de audio** con Whisper para detectar palabras clave de peligro  
@@ -21,18 +16,18 @@
 
 ---
 
-## 🏗️ Arquitectura del Sistema
+## 🏗️ Arquitectura del Sistema  
 
 ```text
 Cámara IP ──▶ Servidor FastAPI ──▶ Procesamiento IA (YOLOv8 + Whisper + BLIP + Llama3)
-                                └──▶ Backblaze (Evidencia)
-                                └──▶ MongoDB (Alertas)
+                                ├──▶ Backblaze (Evidencia)
+                                ├──▶ MongoDB (Alertas)
                                 └──▶ Dashboard Web
 ```
 
 ---
 
-## 📋 Requisitos Previos
+## 📋 Requisitos Previos  
 
 - Python 3.9+
 - MongoDB (local o Atlas)
@@ -42,31 +37,31 @@ Cámara IP ──▶ Servidor FastAPI ──▶ Procesamiento IA (YOLOv8 + Whisp
 
 ---
 
-## ⚙️ Instalación
+## ⚙️ Instalación  
 
-### 1. Clona el repositorio:
-
+1. **Clona el repositorio:**  
 ```bash
 git clone https://github.com/JessielCH/Kuntur_Movilidad.git
 cd Kuntur_Movilidad
 ```
 
-### 2. Crea y activa un entorno virtual:
-
+2. **Crea y activa un entorno virtual:**  
 ```bash
+# Linux/MacOS
 python -m venv venv
-source venv/bin/activate      # Linux/MacOS
-venv\Scripts\activate         # Windows
+source venv/bin/activate
+
+# Windows
+python -m venv venv
+venv\Scripts\activate
 ```
 
-### 3. Instala las dependencias:
-
+3. **Instala las dependencias:**  
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Crea un archivo `.env` con tus credenciales:
-
+4. **Configura las variables de entorno (.env):**  
 ```ini
 # Backblaze
 B2_KEY_ID=tu_key_id
@@ -86,35 +81,31 @@ GROQ_API_KEY=tu_api_key_de_groq
 CAM_IP=192.168.1.100
 ```
 
-### 5. Inicializa la base de datos:
-
+5. **Inicializa la base de datos:**  
 ```bash
 python -c "from db_utils import init_db; init_db()"
 ```
 
 ---
 
-## 🚀 Uso
+## 🚀 Uso  
 
-### Iniciar servidor principal (API + interfaz web):
-
+**Iniciar servidor principal (API + interfaz web):**  
 ```bash
 uvicorn main:app --reload --port 8000
 ```
 
-### Iniciar procesador de videos:
-
+**Iniciar procesador de videos:**  
 ```bash
 python local_processor.py
 ```
 
-### Accede al sistema:
-
+**Accede al sistema:**  
 [http://localhost:8000](http://localhost:8000)
 
 ---
 
-## 📂 Estructura de Archivos
+## 📂 Estructura de Archivos  
 
 ```text
 kuntur/
@@ -142,55 +133,44 @@ kuntur/
 ```
 
 ---
-## 🛠️ Tecnologías Utilizadas
 
-**Inteligencia Artificial:**
+## 🛠️ Tecnologías Utilizadas  
 
-- `YOLOv8` – Detección de armas  
-- `Whisper` – Análisis de audio  
-- `BLIP` – Captioning de imágenes  
-- `LLaMA3` (Groq) – Enriquecimiento de descripciones  
+**Inteligencia Artificial:**  
+- YOLOv8 – Detección de armas  
+- Whisper – Análisis de audio  
+- BLIP – Captioning de imágenes  
+- LLaMA3 (Groq) – Enriquecimiento de descripciones  
 
-**Backend:**
+**Backend:**  
+- FastAPI – API Web  
+- MongoDB – Evidencias  
+- SQLite – Usuarios  
+- Backblaze B2 – Almacenamiento externo  
 
-- `FastAPI` – API Web  
-- `MongoDB` – Evidencias  
-- `SQLite` – Usuarios  
-- `Backblaze B2` – Almacenamiento externo  
-
-**Frontend:**
-
-- `Jinja2` – Plantillas HTML  
-- `Bootstrap 5` – Diseño responsive  
-- `Leaflet` – Mapas interactivos  
+**Frontend:**  
+- Jinja2 – Plantillas HTML  
+- Bootstrap 5 – Diseño responsive  
+- Leaflet – Mapas interactivos  
 
 ---
 
-## 🤝 Contribución
+## 🤝 Contribución  
 
-¡Las contribuciones son bienvenidas!
+¡Las contribuciones son bienvenidas!  
 
-1. Haz un fork del proyecto  
+1. Haz un **fork** del proyecto  
 2. Crea una nueva rama:  
-   ```bash
-   git checkout -b feature/NuevaFuncionalidad
-   ```
+```bash
+git checkout -b feature/NuevaFuncionalidad
+```  
 3. Realiza tus cambios y haz commit:  
-   ```bash
-   git commit -m "Agrega nueva funcionalidad"
-   ```
+```bash
+git commit -m "Agrega nueva funcionalidad"
+```  
 4. Pushea tu rama:  
-   ```bash
-   git push origin feature/NuevaFuncionalidad
-   ```
-5. Abre un **Pull Request** 🚀
+```bash
+git push origin feature/NuevaFuncionalidad
+```  
+5. Abre un **Pull Request** 🚀  
 
----
-
-## 📄 Licencia
-
-Este proyecto está bajo la licencia MIT. Consulta el archivo [LICENSE](LICENSE) para más información.
-
----
-
-**Kuntur** – Vigilancia inteligente para un transporte público más seguro. 🦅🚌
