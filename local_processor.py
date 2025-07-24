@@ -27,9 +27,9 @@ os.environ['ULTRALYTICS_AUTOUPDATE'] = 'disabled'
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 
 # Configuración Backblaze
-B2_KEY_ID = os.getenv("B2_KEY_ID", "005edb6e50f32700000000003")
-B2_APP_KEY = os.getenv("B2_APP_KEY", "K005P0f0Ubgb5zP7aFezbKC/6ri7l0Y")
-B2_BUCKET_ID = os.getenv("B2_BUCKET_ID", "3e5dfb167e65e0af93720710")
+B2_KEY_ID = os.getenv("B2_KEY_ID")
+B2_APP_KEY = os.getenv("B2_APP_KEY")
+B2_BUCKET_ID = os.getenv("B2_BUCKET_ID")
 
 # Rutas locales
 CARPETA_VIDEOS = "./data/videos"
